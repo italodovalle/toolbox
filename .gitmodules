@@ -1,3 +1,6 @@
 [submodule "guney_code"]
 	path = guney_code
 	url = https://github.com/italodovalle/guney_code
+[submodule "pyvenn"]
+	path = pyvenn
+	url = https://github.com/italodovalle/pyvenn
