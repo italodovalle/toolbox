@@ -11,18 +11,18 @@ import json
 import mygene
 import itertools
 import pandas as pd
-import pubchempy as pcp
+#import pubchempy as pcp
 import networkx as nx
 from collections import defaultdict
 from progressbar import ProgressBar
 from mygene import MyGeneInfo
 
 
-infolder = os.getcwd() + '/toolbox'
+#infolder = os.getcwd() + '/toolbox'
 
 
 def convert_gene_api(query):
-    
+
     mg = MyGeneInfo()
     dic = {}
     out = float('nan')
@@ -38,20 +38,20 @@ def convert_gene_api(query):
                 out = h[out_format]
     else:
         out = float('nan')
-        
+
     dic[query] = out
-                
+
     return (dic)
 
 def uniprot2entrez(uniprot_list, mapping_file = None):
-    
-    
+
+
     if mapping_file is None:
-        df = pd.read_csv(infolder + 'entrez_uniprot_mapping.csv', 
+        df = pd.read_csv(infolder + 'entrez_uniprot_mapping.csv',
                          index_col = 0)
     else:
         df = pd.read_csv(mapping_file, index_col = 0)
-    
+
     dx = pd.DataFrame()
     dx['uniprot'] = uniprot_list
     dx['original'] = 1
@@ -59,9 +59,9 @@ def uniprot2entrez(uniprot_list, mapping_file = None):
     res = res[res['original'] == 1]
     res = res[['uniprot', 'entrez']].drop_duplicates()
     mapping = {i:j for i,j in zip(res['uniprot'], res['entrez'])}
-    
+
     #print (len(mapping))
-    
+
     c = 0
     print ('Complete with API')
     if res[res.entrez.isnull()].shape[0] > 0:
@@ -71,8 +71,8 @@ def uniprot2entrez(uniprot_list, mapping_file = None):
             mapping.update(x)
             if x[g]:
                 c = c + 1
-    
-    
+
+
     return (mapping)
 
 
@@ -104,18 +104,18 @@ def load_mesh_graph(infile):
             code2name[code] = name.lower()
             codes.append(code)
 
-                 
+
     edges = []
     for i in set(codes):
         if len(i) > 4:
             a, b = i[:-4], i
             edges.append((a,b))
-            
+
     g = nx.DiGraph()
-    g.add_edges_from(edges)  
-    
+    g.add_edges_from(edges)
+
     return(g, disease2code, code2name)
-    
+
 
 ### old
 def set_db_folder(path):
@@ -127,8 +127,8 @@ def set_db_folder(path):
         __DBPATH__ = path
     else:
         __DBPATH__ = path + '/'
-        
-        
+
+
 def load_ncbi():
     with open (__DBPATH__ + 'ncbi/ncbi2symbol.json') as fp:
         global ncbi2symbol
@@ -136,25 +136,25 @@ def load_ncbi():
     with open(__DBPATH__ + 'ncbi/old2new.json') as fp:
         global old2new
         old2new = json.load(fp)
-        
 
-        
-def convert_gene_id(query, in_format='symbol', 
+
+
+def convert_gene_id(query, in_format='symbol',
                     out_format='entrez'):
-    
+
     """
     in_format: [symbol, entrez, ensemblg, ensemblt, ensemblp]
     """
-    
+
     dt = pd.read_csv(infolder + '/databases/geneids.csv')
-    
+
     dt = dt[[in_format, out_format]]
     dt = dt[~dt.isnull().any(axis=1)]
-    
+
     dt['entrez'] = [str(int(i)) for i in dt['entrez']]
     mapping = {i:j for i,j in zip(dt[in_format], dt[out_format])}
-    
-    
+
+
     print ('Internal database')
     pbar = ProgressBar()
     res = {}
@@ -172,10 +172,10 @@ def convert_gene_id(query, in_format='symbol',
             res[query] = mapping[query]
         else:
             missing.append(query)
-    
-    
+
+
     print ('Found %d in internal database'%len(res))
-    
+
     print ('API')
     c = 0
     if len(missing) > 0:
@@ -186,14 +186,14 @@ def convert_gene_id(query, in_format='symbol',
             if f:
                 res[elem] = f
                 c = c + 1
-    
+
     print ('Found %d in API'%c)
-    
+
     return(res)
-        
-    
-    
-    
+
+
+
+
 
 
 def get_symbol(entrez):
@@ -203,30 +203,30 @@ def get_symbol(entrez):
     elif entrez in old2new.keys():
         if old2new[entrez] != '-':
             newentrez = old2new[entrez]
-            return(ncbi2symbol[newentrez])   
-            
+            return(ncbi2symbol[newentrez])
+
 
 
 def get_entrezid(symbols):
-    
+
     mg = mygene.MyGeneInfo()
     if type(symbols) == str:
         symbols = [symbols]
-    
+
     entrez = {}
-    
+
     for symbol in symbols:
         try:
             entrez[symbol] = int(mg.query(symbol)['hits'][0]['_id'])
         except:
             entrez[symbol] = None
-            
+
     return (entrez)
-    
+
 
 
 def kegg_compound2genes(compound):
-    
+
     with open(__DBPATH__ + 'kegg/enzymes_compounds.json', 'r') as fp:
         kegg = json.load(fp)
     target = []
@@ -234,13 +234,13 @@ def kegg_compound2genes(compound):
         if compound in kegg[i]:
             target.append(i)
     target = list(set(target))
-    
-    return(target)    
-    
-    
-    
+
+    return(target)
+
+
+
 def get_go_similarity(S,T):
-    
+
     def s_go(a,b):
         if a not in gene_go.keys() or b not in gene_go.keys():
             shared = []
@@ -252,13 +252,13 @@ def get_go_similarity(S,T):
             sizes = [len(go_gene[x]) for x in shared]
             similarity = 2./min(sizes)
             return (similarity)
-    
-    
+
+
     with open(__DBPATH__ + 'go/gene2go.json','r') as fp:
         gene_go = json.load(fp)
-    
+
     with open(__DBPATH__ + 'go/go2gene.json','r') as fp:
-        go_gene = json.load(fp) 
+        go_gene = json.load(fp)
 
 
     pairs = list(itertools.product(T,S))
@@ -267,13 +267,51 @@ def get_go_similarity(S,T):
         if pair[0] != pair[1]:
             s.append(s_go(pair[0],pair[1]))
     #s_S_T = sum(s)/len(pairs)
-    
+
     return(s)
-    
+
 
 def get_recon_species_dic(infile):
     recon = pd.read_csv(infile,index_col = 0)
     ids = [i[:-2] for i in recon.index]
     recon2name = dict(zip(ids, recon['name']))
     return(recon2name)
-    
+
+
+
+def get_stitch_targets (stitch_file, stitch_mapping, query,
+                        filtercol = None,filtervalue = None):
+
+    """
+    Example
+    stfile = db + 'stitch_9606.protein_chemical.links.detailed.v5.0.tsv'
+    stmap = db + 'stitch_entrez_gene_id.vs.string.v10.28042015.tsv'
+    filtercol = 'combined_score'
+    filtervalue = 400
+    x = get_stitch_targets(stfile, stmap,161557, filtercol, filtervalue )
+    """
+
+
+    dic = {}
+    st = pd.read_csv(stitch_file,
+                sep = '\t')
+
+    buf = pd.read_csv(db + 'stitch_entrez_gene_id.vs.string.v10.28042015.tsv',
+                 sep = '\t')
+
+    ## solve this!!
+    st = st[st['protein'].isin(buf['STRING_Locus_ID'])]
+
+    mapping = {i:j for i,j in zip(buf['STRING_Locus_ID'],buf['#Entrez_Gene_ID'])}
+
+    attach = '0' * (8 - len(str(int(query))))
+    fquery = 'CIDs' + attach + str(int(query))
+
+    q = st[st.chemical == fquery]
+    if filtercol:
+        if filtervalue:
+            q = q[q[filtercol] > filtervalue]
+
+    dic[query] = list(set([mapping[i] for i in q.protein]))
+
+    return (dic)

@@ -15,37 +15,39 @@ from collections import defaultdict
 from multiprocessing import Pool
 import random
 from random import shuffle
-import separation
+#import separation
 from guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_separation_proximity, calculate_proximity
 from scipy import stats
+from scipy import sparse
 import mygene
 import os
 from progressbar import ProgressBar
+import pickle
 
 class NetworkUtilsInputError(Exception):
     pass
 
 
-def calculate_proximity_italo(network, nodes_from, nodes_to, 
-                        nodes_from_random=None, nodes_to_random=None, 
-                        bins=None, n_random=1000, min_bin_size=100, 
+def calculate_proximity_italo(network, nodes_from, nodes_to,
+                        nodes_from_random=None, nodes_to_random=None,
+                        bins=None, n_random=1000, min_bin_size=100,
                         seed=452456, sp = None, node2index = None,lengths = None):
-    
+
     """
     Calculate proximity from nodes_from to nodes_to
     If degree binning or random nodes are not given, they are generated
     last edit: Italo Oct 12, 2019
     """
-    
-    
+
+
     nodes_network = set(network.nodes())
     if len(set(nodes_from) & nodes_network) == 0 or len(set(nodes_to) & nodes_network) == 0:
         return None # At least one of the node group not in network
-    
+
     d = calculate_distances(network, nodes_from, nodes_to,sp, node2index)
-    
+
     if n_random:
-    
+
         if bins is None and (nodes_from_random is None or nodes_to_random is None):
             bins = network_utilities.get_degree_binning(network, min_bin_size, lengths) # if lengths is given, it will only use those nodes
         if nodes_from_random is None:
@@ -59,7 +61,7 @@ def calculate_proximity_italo(network, nodes_from, nodes_to,
             nodes_from, nodes_to = values_random
             res = calculate_distances(network, nodes_from, nodes_to,sp, node2index)
             null.append(res)
-            
+
 
         null_s = []
         null_c = []
@@ -72,8 +74,24 @@ def calculate_proximity_italo(network, nodes_from, nodes_to,
 
         d['avg_closest'],d['std_closest'] = np.mean(null_c), np.std(null_c)
         d['z_closest'] = (d['closest'] - d['avg_closest'])/d['std_closest']
-    
+
     return (d)
+
+
+
+def compute_shortest_paths(G):
+    """
+    Compute shortest paths and return a pickle object with shortest path
+    lengths for all node pairs and node2index mapping
+    """
+
+    index2node = {i:j for i,j in zip(range(len(G.nodes())), G.nodes())}
+    adj = nx.adjacency_matrix(G)
+
+    sp = sparse.csgraph.shortest_path(adj, directed=False,unweighted=True)
+    sps = [index2node, sp]
+
+    return (sps)
 
 
 
@@ -88,19 +106,19 @@ def distance2component(C,t,G):
     v = stats.gmean(list(d.T.iloc[0]))
     return(v)
 
-def calculate_shortest_components (network, nodes_from, nodes_to, 
-                        nodes_from_random=None, nodes_to_random=None, 
-                        bins=None, n_random=1000, min_bin_size=100, 
+def calculate_shortest_components (network, nodes_from, nodes_to,
+                        nodes_from_random=None, nodes_to_random=None,
+                        bins=None, n_random=1000, min_bin_size=100,
                         seed=452456, lengths=None):
-    
+
     nodes_network = set(network.nodes())
     if len(set(nodes_from) & nodes_network) == 0 or len(set(nodes_to) & nodes_network) == 0:
         return None # At least one of the node group not in network
-    
+
     d = shortest_components_geom(nodes_from, nodes_to, network)
-    
+
     if n_random:
-    
+
         if bins is None and (nodes_from_random is None or nodes_to_random is None):
             bins = network_utilities.get_degree_binning(network, min_bin_size, lengths) # if lengths is given, it will only use those nodes
         if nodes_from_random is None:
@@ -120,20 +138,20 @@ def calculate_shortest_components (network, nodes_from, nodes_to,
 
 
         dic = {}
-        dic['shortest'] = d 
+        dic['shortest'] = d
         dic['mean'] = np.mean(null)
         dic['std'] = np.std(null)
         dic['z'] = (d - dic['mean'])/dic['std']
-    
+
     return (d)
 
 
 def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False):
-    
+
     """
-    
+
     """
-    
+
     if header:
         dt = pd.read_table(infile,sep = sep)
         edges = zip(dt[columns[0]], dt[columns[1]])
@@ -146,7 +164,7 @@ def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False):
     G.add_edges_from(edges)
 
     if lcc:
-        g = list(nx.connected_component_subgraphs(G))[0]
+        g = list(connected_component_subgraphs(G))[0]
         #print (len(g.nodes()), 'nodes')
         #print (len(g.edges()), 'edges')
         return(g)
@@ -156,20 +174,18 @@ def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False):
         return(G)
 
 
-def calculate_distances (G, nodes_from, nodes_to, 
+def calculate_distances (G, nodes_from, nodes_to,
                          sp=None, node2index=None):
-    
+
     """
     pair of nodes that do not have a path
     do not contribute to the final value
-    
     sp: numpy matrix
     index2node: dict
-    
     """
-    
+
     ds = defaultdict(dict)
-    
+
 
     for i in nodes_from:
         for j in nodes_to:
@@ -183,22 +199,22 @@ def calculate_distances (G, nodes_from, nodes_to,
                         ds[i][j] = sp[node2index[i],node2index[j]]
                 else:
                     ds[i][j] = float('nan')
-        
+
     ds = pd.DataFrame.from_dict(ds)
     # nodes_to: rows
-    # nodes_from: columns 
-    
+    # nodes_from: columns
+
     dic = {}
-    
+
     dic['shortest'] = ds.mean().mean()
     dic['closest'] = ds.min().mean()
-    
+
     return (dic)
 
-def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_random=1000, 
+def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_random=1000,
                                min_bin_size=100, seed=452456):
-    
-    
+
+
     if nodes_random is None:
         network_nodes = list(network.nodes())
         nodes_random = []
@@ -210,23 +226,23 @@ def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_
     network_sub = network.subgraph(nodes)
     component_nodes = network_utilities.get_connected_components(network_sub, False)[0]
     res['lcc'] = len(component_nodes)
-    
+
     ## proportion nodes in lcc
     res['lcc_p'] = len(set(nodes) & set(component_nodes))/len(component_nodes)
-    
+
     ## conductance
     res['cond'] = nx.algorithms.cuts.conductance(network, nodes)
-    
+
     ## density
     res['density'] = nx.density(nx.subgraph(network, nodes))
-    
+
     values = {}
     ## vectors for output
     values['lcc'] = np.empty(len(nodes_random))
     values['lcc_p'] = np.empty(len(nodes_random))
     values['cond'] = np.empty(len(nodes_random))
     values['density'] = np.empty(len(nodes_random))
-    
+
     ## loop in random
     for i, nodes in enumerate(nodes_random):
         network_sub = network.subgraph(nodes)
@@ -235,7 +251,7 @@ def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_
         values['lcc_p'][i] = len(set(nodes) & set(component_nodes))/len(component_nodes)
         values['cond'][i] = nx.algorithms.cuts.conductance(network, nodes)
         values['density'][i] = nx.density(network_sub)
-    
+
     final = defaultdict(dict)
     for par in res.keys():
         m, s = np.mean(values[par]), np.std(values[par])
@@ -245,8 +261,8 @@ def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_
             z = (res[par] - m) / s
         final[par]['mean'], final[par]['std'], final[par]['z'] = m,s,z
         final[par]['value'] = res[par]
-    
-    return (final) 
+
+    return (final)
 
 
 def calculate_sab(G, nodes_from, nodes_to):
@@ -260,12 +276,12 @@ def calculate_sab(G, nodes_from, nodes_to):
 
     # calculate separation
     s_AB = d_AB - (d_A + d_B)/2.
-    
+
     return(s_AB)
 
 
 def calculate_sab_null(G, nodes_from, nodes_to,n_random=1000):
-    
+
     all_genes = list(G.nodes())
     null_ref = []
     for i in range(n_random):
@@ -273,33 +289,33 @@ def calculate_sab_null(G, nodes_from, nodes_to,n_random=1000):
         targets = set(random.sample(all_genes, len(nodes_to)))
         sab = calculate_sab(G, seeds, targets)
         null_ref.append(sab)
-    
+
     return (null_ref)
 
 
 def ref_distribution(S,T,G,cpu=2, iterations=10):
-    
+
     """
     S: [list] set of disease proteins
     T: [list] set of drug targets
     G: [nx.Graph] interactome
     reference distribution to assess the significance between (S,T)
     """
-    
+
     iterable = [(S,G) for i in range(iterations)]
     p = Pool(cpu)
     nS_v = p.map(get_random_nodes, iterable)
     #logging.info('Random disease genes - %d cpu %d iterations'%(cpu,iterations))
     #nS_v = list(tqdm.tqdm(p.imap(get_random_nodes, iterable), total=len(iterable)))
     p.close()
-    
+
     #logging.info('Random target genes - %d cpu %d iterations'%(cpu,iterations))
     iterable = [(T,G) for i in range(iterations)]
     p = Pool(cpu)
     nT_v = p.map(get_random_nodes, iterable)
     #nT_v = list(tqdm.tqdm(p.imap(get_random_nodes, iterable), total=len(iterable)))
     p.close()
-    
+
     ref_s = []
     ref_c = []
     ref_k = []
@@ -310,11 +326,11 @@ def ref_distribution(S,T,G,cpu=2, iterations=10):
         ref_s.append(ds)
         ref_c.append(dc)
         ref_k.append(dk)
-    
-    
+
+
     return([ref_s, ref_c, ref_k])
-    
-    
+
+
 def compute_sp_to_closest (S,G):
     """
     S: [list] set of source nodes
@@ -322,27 +338,33 @@ def compute_sp_to_closest (S,G):
     """
     if len(S) == 1:
         raise NetworkUtilsInputError('Input received just one node')
-    
-    
+
+
     dt = pd.DataFrame(index=S, columns=S)
-    
-    
+
+
     for s in dt.index:
         for t in dt.columns:
             d = nx.shortest_path_length(G,source=s, target=t)
             dt[t].loc[s] = d
-    
+
     ## ignoring diagonal
     m = np.asmatrix(dt)
     np.fill_diagonal(m, np.inf)
     dt = pd.DataFrame(m,index=dt.index, columns=dt.columns)
-    
-    
+
+
     dc = dt.apply(min)
-    
+
     return (dc)
 
-
+def connected_component_subgraphs(G, copy=True):
+    ## this function was removed from latest versions of networkx!!
+    for c in nx.connected_components(G):
+        if copy:
+            yield G.subgraph(c).copy()
+        else:
+            yield G.subgraph(c)
 
 def get_lcc(G,S):
     """
@@ -354,20 +376,20 @@ def get_lcc(G,S):
     else:
         g = nx.subgraph(G,S)
         if len(g.nodes()) > 0:
-            lcc = max(nx.connected_component_subgraphs(g), key=len)
+            lcc = max(connected_component_subgraphs(g), key=len)
             return (lcc)
         else:
             return(g)
 
-        
-        
+
+
 def get_lcc_significance(G,seeds,n_random=1000):
 
-    # getting all genes in the network  
+    # getting all genes in the network
     all_genes = G.nodes()
 
     number_of_seed_genes = len(seeds & set(all_genes))
-    
+
     l_list  = []
 
     # simulations with randomly distributed seed nodes
@@ -379,8 +401,8 @@ def get_lcc_significance(G,seeds,n_random=1000):
         # get rand lcc
         lcc = get_lcc(G,rand_seeds)
         lcc = len(lcc.nodes())
-        l_list.append(lcc) 
-        
+        l_list.append(lcc)
+
 
     # get the actual value
     lcc_observed = get_lcc(G,seeds)
@@ -395,11 +417,11 @@ def get_lcc_significance(G,seeds,n_random=1000):
     else:
         z_score = (1.*lcc_observed_size - l_mean)/l_std
 
-    
+
     return ({'lcc_size':lcc_observed_size, 'z_score':z_score})
 
 
-    
+
 def read_edgelist (infile,sep=' ',header=False):
     if header:
         lines = open(infile, 'r').readlines()[1:]
@@ -424,7 +446,7 @@ def get_visualization_subnetwork(seeds,targets,G):
             dist[i][j] = nx.shortest_path_length(G,i,j)
 
     dist = pd.DataFrame.from_dict(dist)
-    
+
     ### for each target, get the shortest path to the closest disease protein
     edges = []
     for i in dist.columns:
@@ -433,19 +455,19 @@ def get_visualization_subnetwork(seeds,targets,G):
                 p = nx.shortest_path(G, i, j)
                 for k in range(len(p)-1):
                     edges.append((p[k],p[k+1]))
-                    
+
     ## include edges in LCCs
     lccd = get_lcc(G, seeds)
     edges = edges + list(lccd.edges())
-    
+
     lcct = get_lcc(G, targets)
     edges = edges + list(lcct.edges())
-    
-    
+
+
     edges = list(set(edges))
     g = nx.Graph()
     g.add_edges_from(edges)
-    
+
     ## create edgelist table
     dic = defaultdict(dict)
     c = 0
@@ -461,14 +483,14 @@ def get_visualization_subnetwork(seeds,targets,G):
             dic[c]['inter'] = 1
         c = c + 1
     edgetable = pd.DataFrame.from_dict(dic, orient='index')
-    
-    
-    
+
+
+
     ## create node table
     ntable = defaultdict(dict)
     c = 0
-    mapping = convert_gene_id(list(g.nodes()), 
-                                              in_format='entrez', 
+    mapping = convert_gene_id(list(g.nodes()),
+                                              in_format='entrez',
                                               out_format='symbol')
     for i in g.nodes():
         ntable[c]['node'] = int(i)
@@ -480,10 +502,10 @@ def get_visualization_subnetwork(seeds,targets,G):
         if str(int(i)) in mapping.keys():
             ntable[c]['symbol'] = mapping[str(int(i))]
         c = c + 1
-    
-    
+
+
     nodetable = pd.DataFrame.from_dict(ntable, orient='index')
-    
+
     return(edgetable, nodetable)
 
 def convert_gene_api(query, out_format, mg):
@@ -496,25 +518,25 @@ def convert_gene_api(query, out_format, mg):
         for h in res['hits']:
             if h['taxid'] == 9606 and out_format in h.keys():
                 out = h[out_format]
-                
+
     return(out)
-        
-def convert_gene_id(query, in_format='symbol', 
+
+def convert_gene_id(query, in_format='symbol',
                     out_format='entrez'):
-    
+
     """
     in_format: [symbol, entrez, ensemblg, ensemblt, ensemblp]
     """
-    
+
     dt = pd.read_csv(infolder + '/databases/geneids.csv')
-    
+
     dt = dt[[in_format, out_format]]
     dt = dt[~dt.isnull().any(axis=1)]
-    
+
     dt['entrez'] = [str(int(i)) for i in dt['entrez']]
     mapping = {i:j for i,j in zip(dt[in_format], dt[out_format])}
-    
-    
+
+
     print ('Internal database')
     pbar = ProgressBar()
     res = {}
@@ -532,10 +554,10 @@ def convert_gene_id(query, in_format='symbol',
             res[query] = mapping[query]
         else:
             missing.append(query)
-    
-    
+
+
     print ('Found %d in internal database'%len(res))
-    
+
     print ('API')
     c = 0
     if len(missing) > 0:
@@ -546,7 +568,7 @@ def convert_gene_id(query, in_format='symbol',
             if f:
                 res[elem] = f
                 c = c + 1
-    
+
     print ('Found %d in API'%c)
-    
+
     return(res)
