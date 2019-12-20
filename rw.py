@@ -30,13 +30,14 @@ def get_transition_matrix(G):
     adj = adj.todense()
     ksum = adj.sum(axis=1)
     D = np.identity(adj.shape[0])
+    np.fill_diagonal(D, ksum)
     T = np.dot(np.linalg.inv(D),adj)
 
     return (T)
 
 
 
-def run_walk (p0, T, r = 0.2, n_steps = None, conv_threshold = 0.000001):
+def run_walk (p0, T, r = 0.2, conv_threshold = 0.000001):
 
     """
     Run random walk
@@ -47,17 +48,13 @@ def run_walk (p0, T, r = 0.2, n_steps = None, conv_threshold = 0.000001):
     """
 
     p_t = np.copy(p0)
-    if n_steps:
-        for i in range(n_steps):
-            p_t_1 = ((1-r) * (p_t * T)) + r * p0
-            p_t = p_t_1
-    else:
-        diff_norm = 1
-        while diff_norm < conv_threshold:
-            p_t_1 = ((1-r) * (p_t * T)) + r * p0
-            diff_norm = np.linalg.norm(np.subtract(p_t_1,p_t),1)
-            p_t = p_t_1
-    p_t = np.squeeze(np.asarray(p_t))
+    diff_norm = 1
+    while diff_norm > conv_threshold:
+        p_t_1 = ((1-r) * (p_t * T)) + r * p0
+        p_t_1 = np.asarray(p_t_1)
+        diff_norm = np.linalg.norm(np.subtract(p_t_1,p_t),1)
+        p_t = p_t_1
+        p_t = np.squeeze(np.asarray(p_t))
     return (p_t)
 
 

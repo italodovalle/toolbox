@@ -78,6 +78,40 @@ def calculate_proximity_italo(network, nodes_from, nodes_to,
     return (d)
 
 
+def get_significance_density(network, nodes_from,
+                        nodes_from_random=None,
+                        bins=None, n_random=1000, min_bin_size=100,
+                        seed=452456,lengths = None):
+
+
+    nodes_network = set(network.nodes())
+
+    d = {}
+    d['density'] = nx.density(nx.subgraph(network, nodes_from))
+
+    if n_random:
+
+        if bins is None and (nodes_from_random is None or nodes_to_random is None):
+            bins = network_utilities.get_degree_binning(network,
+            min_bin_size, lengths) # if lengths is given, it will only use those nodes
+        if nodes_from_random is None:
+            nodes_from_random = get_random_nodes(nodes_from, network, bins = bins,
+            n_random = n_random, min_bin_size = min_bin_size, seed = seed)
+
+        #values = np.empty(len(nodes_from_random)) #n_random
+        null = []
+        for i in range(len(nodes_from_random)):
+            res = nx.density(nx.subgraph(network, nodes_from_random[i]))
+            null.append(res)
+
+        d['avg_density'],d['std_density'] = np.mean(null), np.std(null)
+        d['z_density'] = (d['density'] - d['avg_density'])/d['std_density']
+
+    return (d)
+
+
+
+
 
 def compute_shortest_paths(G):
     """

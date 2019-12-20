@@ -293,11 +293,9 @@ def get_stitch_targets (stitch_file, stitch_mapping, query,
 
 
     dic = {}
-    st = pd.read_csv(stitch_file,
-                sep = '\t')
+    st = pd.read_csv(stitch_file,sep = '\t')
 
-    buf = pd.read_csv(db + 'stitch_entrez_gene_id.vs.string.v10.28042015.tsv',
-                 sep = '\t')
+    buf = pd.read_csv(stitch_mapping,sep = '\t')
 
     ## solve this!!
     st = st[st['protein'].isin(buf['STRING_Locus_ID'])]

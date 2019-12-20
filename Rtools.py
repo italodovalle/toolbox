@@ -8,12 +8,13 @@ Created on Fri Aug  3 14:11:00 2018
 
 import rpy2
 import os
-os.environ['R_HOME'] = '/usr/local/Cellar/r/3.4.1_1/lib/R'
+#os.environ['R_HOME'] = '/usr/local/Cellar/r/3.4.1_1/lib/R'
+os.environ['R_HOME'] = '/Library/Frameworks/R.framework/Resources'
 from rpy2 import robjects
 from rpy2.robjects import pandas2ri
 
 
-robjects.r('''               
+robjects.r('''
         library(ReactomePA)
         enrichment_test <- function(gene,pcutoff,adjustmethod,qcutoff,
                        min_gs_size, max_gs_size) {
@@ -26,7 +27,7 @@ robjects.r('''
                                          readable=T)
                       df = as.data.frame(x)
                       return(df)
-                      
+
         }
         ''')
 
@@ -34,26 +35,26 @@ robjects.r('''
 def get_enrichment (input_vector,pcutoff=0.05,adjustmethod="BH",
                     qcutoff=0.2, min_gs_size = 10, max_gs_size=500,
                     organism="human"):
-    
+
     """
     Reactome Enrichment Analysis (ReactomePA Bioconductor)
-    
+
     Args:
         input_vector: (obj:list) gene entrez ids str format
         pcutoff: p-value threshold
         adjustmethod: Multiple Testing Correction method
-                      one of "holm", "hochberg", "hommel", "bonferroni", 
+                      one of "holm", "hochberg", "hommel", "bonferroni",
                       "BH", "BY", "fdr", "none"
-                      
+
     Returns:
         df: DataFrame with enrichment results
     """
-    
+
     enrich = robjects.r['enrichment_test']
     genes = robjects.StrVector(input_vector)
     enrichment = pandas2ri.ri2py_dataframe(enrich(genes,
                                                   pcutoff,adjustmethod,
                                                   qcutoff,
-                                                  min_gs_size = 10, 
+                                                  min_gs_size = 10,
                                                   max_gs_size=500))
     return(enrichment)
