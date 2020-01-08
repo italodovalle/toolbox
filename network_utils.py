@@ -129,6 +129,25 @@ def compute_shortest_paths(G):
 
 
 
+def get_dataframe_from_graph (network, data=True, weight = ['weight']):
+
+
+    if not type(weight) == list:
+        ValueError("weight must be a list object")
+    ## transform graph object in dataframe
+    df = defaultdict(dict)
+    c = 0
+    for i,j,w in network.edges(data=data):
+        df[c]['source'] = i
+        df[c]['target'] = j
+        for col in weight:
+            df[c][col] = w[col]
+        c = c + 1
+
+    df = pd.DataFrame.from_dict(df, orient='index')
+    return (df)
+
+
 def distance2component(C,t,G):
     dic = defaultdict(dict)
     for s in C:
