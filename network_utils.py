@@ -15,8 +15,8 @@ from collections import defaultdict
 from multiprocessing import Pool
 import random
 from random import shuffle
-#import separation
-from guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_separation_proximity, calculate_proximity
+from .separation import *
+from guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_proximity
 from scipy import stats
 from scipy import sparse
 import mygene
@@ -137,12 +137,22 @@ def get_dataframe_from_graph (network, data=True, weight = ['weight']):
     ## transform graph object in dataframe
     df = defaultdict(dict)
     c = 0
-    for i,j,w in network.edges(data=data):
+    for edge in network.edges(data=data):
+        if data:
+            i,j, w = edge
+            for col in weight:
+                df[c][col] = w[col]
+        else:
+            i,j = edge
         df[c]['source'] = i
         df[c]['target'] = j
-        for col in weight:
-            df[c][col] = w[col]
         c = c + 1
+
+    for i in network.nodes():
+        if network.degree(i) == 0:
+            df[c]['source'] = i
+            df[c]['target'] = ''
+            c = c + 1
 
     df = pd.DataFrame.from_dict(df, orient='index')
     return (df)
@@ -202,7 +212,7 @@ def calculate_shortest_components (network, nodes_from, nodes_to,
 def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False):
 
     """
-
+    infile, sep, header, columns, lcc
     """
 
     if header:
@@ -321,11 +331,11 @@ def calculate_significance_pars(network, nodes, nodes_random=None, bins=None, n_
 def calculate_sab(G, nodes_from, nodes_to):
 
     # distances WITHIN the two gene sets:
-    d_A = separation.calc_single_set_distance(G,set(nodes_from))
-    d_B = separation.calc_single_set_distance(G,set(nodes_to))
+    d_A = calc_single_set_distance(G,set(nodes_from))
+    d_B = calc_single_set_distance(G,set(nodes_to))
 
     # distances BETWEEN the two gene sets:
-    d_AB = separation.calc_set_pair_distances(G,set(nodes_from),set(nodes_to))
+    d_AB = calc_set_pair_distances(G,set(nodes_from),set(nodes_to))
 
     # calculate separation
     s_AB = d_AB - (d_A + d_B)/2.
@@ -441,7 +451,7 @@ def get_lcc_significance(G,seeds,n_random=1000):
     # getting all genes in the network
     all_genes = G.nodes()
 
-    number_of_seed_genes = len(seeds & set(all_genes))
+    number_of_seed_genes = len(set(seeds) & set(all_genes))
 
     l_list  = []
 
