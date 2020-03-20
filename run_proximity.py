@@ -196,29 +196,30 @@ if __name__ == '__main__':
 
 
     polyphenol = pd.read_csv(polyphenl_targets_file,index_col = 0)
+    polyphenol = polyphenol.reset_index()
     #polyphenol = polyphenol[(polyphenol.experimental > 0) | (polyphenol.database > 0)]
     polyphenol = polyphenol[(polyphenol.experimental > 0)]
     chemical2genes = defaultdict(list)
     for i in polyphenol.index:
-        name = polyphenol.chemical.loc[i]
+        name = str(int(polyphenol.chemical.loc[i]))
         chemical2genes[name].append(polyphenol.entrezid.loc[i])
 
     for i in chemical2genes.keys():
         chemical2genes[i] = list(set(chemical2genes[i]))
 
 
+    if test_run:
+        logging.info('Test Run')
 
-    logging.info('Test Run')
-
-    s = time.time()
-    df = run_proximity(G, disease2genes, chemical2genes, ncpus = ncpus,
+        s = time.time()
+        df = run_proximity(G, disease2genes, chemical2genes, ncpus = ncpus,
                        n_random = n_random, outdir=outdir_tmp_files, test_run=True)
-    e = time.time() - s
+        e = time.time() - s
 
 
-    estimated_time = (e * (len(disease2genes) * len(chemical2genes)))/ncpus/3600
+        estimated_time = (e * (len(disease2genes) * len(chemical2genes)))/ncpus/3600
 
-    logging.info('estimated end time: %f hours'%estimated_time)
+        logging.info('estimated end time: %f hours'%estimated_time)
 
 
     logging.info('Running analysis')
