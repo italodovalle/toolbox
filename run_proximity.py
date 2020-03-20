@@ -15,29 +15,8 @@ import re
 from toolbox.guney_code import wrappers
 from toolbox.guney_code import network_utilities
 import toolbox.network_utils as network_utils
-
+import sys
 import logging
-
-### Interactome params
-
-
-infolder = '/home/italodovalle/flavonoids/data/'
-infile = infolder + 'hiunion_interactions.csv'
-header=True
-sep = ','
-lcc = True
-columns = ['proteinA', 'proteinB']
-
-outfolder = '/home/italodovalle/runs/polyphenols/hiunion/'
-disease_genes_file = infolder + 'Guney2016_GenesDisease.tsv'
-polyphenl_targets_file = infolder + 'PhenolExplorer_CTD-Stitch.csv'
-
-
-ncpus = 15
-n_random = 1000
-
-outdir_tmp_files = outfolder + 'tmp'
-final_outfile = outfolder + 'hiunion_zscore_proximity.csv'
 
 
 def get_zscores (disease_chemical, n_random, outdir,
@@ -84,17 +63,22 @@ def run_proximity (G, disease2genes, chemical2genes, ncpus = 15,
 
 
     finished = []
-    ## retrive pairs that had their calculations already done
-    #if outdir:
-    #    fs = []
-    #    for i in os.listdir(outdir_tmp_files):
-    #        if i.endswith('.csv'):
-    #            x = pd.read_csv(outdir_tmp_files + '/' + i, index_col = 0)
-    #            fs.append(x)
+    ##retrive pairs that had their calculations already done
+    if outdir:
+        fs = []
+        for i in os.listdir(outdir):
+            if i.endswith('.csv'):
+                x = pd.read_csv(outdir + '/' + i, index_col = 0)
+                fs.append(x)
 
-    #    if len(fs) > 0:
-    #        ds = pd.concat(fs)
-    #        finished = [(i,j) for i,j in zip(ds.disease, ds.chemical)]
+        if len(fs) > 0:
+            ds = pd.concat(fs)
+            finished = [(i,str(j)) for i,j in zip(ds.disease, ds.chemical)]
+
+    #print (len(finished))
+    #print (finished[:10])
+    #sys.exit()
+
 
     samples = []
     for disease in disease2genes.keys():
@@ -119,6 +103,28 @@ def run_proximity (G, disease2genes, chemical2genes, ncpus = 15,
     return(df)
 
 if __name__ == '__main__':
+
+    ### Interactome params
+
+
+    infolder = '/home/italodovalle/flavonoids/data/'
+    infile = infolder + 'hiunion_interactions.csv'
+    header=True
+    sep = ','
+    lcc = True
+    columns = ['proteinA', 'proteinB']
+
+    outfolder = '/home/italodovalle/runs/polyphenols/hiunion/'
+    disease_genes_file = infolder + 'Guney2016_GenesDisease.tsv'
+    polyphenl_targets_file = infolder + 'PhenolExplorer_CTD-Stitch.csv'
+
+
+    ncpus = 15
+    n_random = 1000
+
+    outdir_tmp_files = outfolder + 'tmp'
+    final_outfile = outfolder + 'hiunion_zscore_proximity.csv'
+
 
     logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S',level=logging.INFO)
