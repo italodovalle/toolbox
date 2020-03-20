@@ -11,6 +11,8 @@ import os
 import time
 from functools import partial
 import re
+import argparse
+import sys
 
 from toolbox.guney_code import wrappers
 from toolbox.guney_code import network_utilities
@@ -106,24 +108,65 @@ if __name__ == '__main__':
 
     ### Interactome params
 
+    description = 'Run Proximity'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-i', required=True, dest='interactome',
+                        action='store',help='interactome file')
+    parser.add_argument('-d', required=True, dest='diseasegenes',action='store',
+                        help='disease genes file')
+    parser.add_argument('-t', required=True, dest='targets',action='store',
+                        help='target genes file')
+    parser.add_argument('-c', dest='cores', action='store',
+                        help='number of cores to use, default = 6',
+                        default= 6)
+    parser.add_argument('-r', dest='nrandom', action='store',
+                        help='n random permutations, default = 1000',
+                        default= 1000)
+    parser.add_argument('-o', required=True, dest='outfolder', action='store',
+                        help='outfolder')
+    parser.add_argument('-sn', dest='source_node', action='store',
+                        help='name source node, default = proteinA',
+                        default= 'proteinA')
+    parser.add_argument('-tn', dest='target_node', action='store',
+                        help='name target node, default = proteinB',
+                        default= 'proteinB')
+    parser.add_argument('-lcc', dest = 'lcc', action = 'store',
+                        help = 'LCC, default = True',
+                        default = True)
+    parser.add_argument('-sep', dest='separator', action='store',
+                        help = 'separator, default = ","',
+                        default = ',')
+    parser.add_argument('-test', dest = 'test_run', action='store',
+                        help = 'test run, default = False',
+                        default = False)
 
-    infolder = '/home/italodovalle/flavonoids/data/'
-    infile = infolder + 'hiunion_interactions.csv'
+
+
+    if len(sys.argv) <= 1:
+        parser.print_help()
+        sys.exit(1)
+    else:
+        args = parser.parse_args()
+
+
+    ##--------------------------------
+    #Input file fastq already trimmed
+    infile = args.interactome
+    disease_genes_file = args.diseasegenes
+    polyphenl_targets_file = args.targets
+    ncpus = int(args.cores)
+    n_random = int(args.nrandom)
+    outdir_tmp_files = os.path.abspath(args.outfolder) + '/'
+    sep = args.separator
+    lcc = bool(args.lcc)
+    columns = [args.source_node, args.target_node]
+    test_run = bool(args.test_run)
+
+    final_outfile = outdir_tmp_files + 'merged_zscore_proximity.csv'
+
     header=True
-    sep = ','
-    lcc = True
-    columns = ['proteinA', 'proteinB']
-
-    outfolder = '/home/italodovalle/runs/polyphenols/hiunion/'
-    disease_genes_file = infolder + 'Guney2016_GenesDisease.tsv'
-    polyphenl_targets_file = infolder + 'PhenolExplorer_CTD-Stitch.csv'
 
 
-    ncpus = 15
-    n_random = 1000
-
-    outdir_tmp_files = outfolder + 'tmp'
-    final_outfile = outfolder + 'hiunion_zscore_proximity.csv'
 
 
     logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -168,7 +211,6 @@ if __name__ == '__main__':
     logging.info('Test Run')
 
     s = time.time()
-    ncpus = 10
     df = run_proximity(G, disease2genes, chemical2genes, ncpus = ncpus,
                        n_random = n_random, outdir=outdir_tmp_files, test_run=True)
     e = time.time() - s
