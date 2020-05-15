@@ -481,7 +481,8 @@ def get_lcc_significance(G,seeds,n_random=1000):
         z_score = (1.*lcc_observed_size - l_mean)/l_std
 
 
-    return ({'lcc_size':lcc_observed_size, 'z_score':z_score})
+    return ({'lcc_size':lcc_observed_size, 'z_score':z_score,
+             'avg_size':l_mean, 'std_size':l_std})
 
 
 
