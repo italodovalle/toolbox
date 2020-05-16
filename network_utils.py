@@ -16,7 +16,7 @@ from multiprocessing import Pool
 import random
 from random import shuffle
 from .separation import *
-from guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_proximity
+from .guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_proximity
 from scipy import stats
 from scipy import sparse
 import mygene
