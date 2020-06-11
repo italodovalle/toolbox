@@ -553,18 +553,18 @@ def get_visualization_subnetwork(seeds,targets,G):
     ## create node table
     ntable = defaultdict(dict)
     c = 0
-    mapping = convert_gene_id(list(g.nodes()),
-                                              in_format='entrez',
-                                              out_format='symbol')
+    #mapping = convert_gene_id(list(g.nodes()),
+    #                                          in_format='entrez',
+    #                                          out_format='symbol')
     for i in g.nodes():
         ntable[c]['node'] = int(i)
         ntable[c]['degree_sub'] = g.degree(i)
         ntable[c]['degree_orig'] = G.degree(i)
         ntable[c]['disease'] = i in seeds
         ntable[c]['target'] = i in targets
-        ntable[c]['symbol'] = float('nan')
-        if str(int(i)) in mapping.keys():
-            ntable[c]['symbol'] = mapping[str(int(i))]
+        #ntable[c]['symbol'] = float('nan')
+        #if str(int(i)) in mapping.keys():
+        #    ntable[c]['symbol'] = mapping[str(int(i))]
         c = c + 1
 
 
