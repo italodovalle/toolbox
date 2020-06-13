@@ -446,20 +446,26 @@ def get_lcc(G,S):
 
 
 
-def get_lcc_significance(G,seeds,n_random=1000):
+def get_lcc_significance(G,seeds,n_random=1000, min_bin_size = 100,
+                            lengths = None,seed=452456):
 
     # getting all genes in the network
     all_genes = G.nodes()
 
-    number_of_seed_genes = len(set(seeds) & set(all_genes))
+
+    seeds = list(set(seeds) & set(G.nodes()))
+    #number_of_seed_genes = len(set(seeds) & set(all_genes))
 
     l_list  = []
 
-    # simulations with randomly distributed seed nodes
-    for i in range(1,n_random+1):
+    bins = network_utilities.get_degree_binning(G, min_bin_size, lengths)
+    nodes_random = get_random_nodes(seeds, G,
+                                    bins = bins, n_random = n_random,
+                                    min_bin_size = min_bin_size,
+                                    seed = seed)
 
-        # get random seeds
-        rand_seeds = set(random.sample(all_genes,number_of_seed_genes))
+    # simulations with randomly distributed seed nodes
+    for i, rand_seeds in enumerate(nodes_random):
 
         # get rand lcc
         lcc = get_lcc(G,rand_seeds)
