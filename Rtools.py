@@ -53,7 +53,7 @@ robjects.r('''
          }
 
 
-          ego <- enrichGO(gene          = gene.df$ENTREZID,
+          ego <- enrichGO(gene          = genes,
                           universe      = names(geneList),
                           OrgDb         = org.Hs.eg.db,
                           ont           = ont,

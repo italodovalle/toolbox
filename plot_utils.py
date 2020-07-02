@@ -71,3 +71,43 @@ def get_grouped_barchart(dm, id_var, value_var_1, value_var_2,
     ax.legend(loc='best')
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=90);
     return (ax)
+
+
+
+def get_barplot_error (dm, id_var, value_var, std_var_1, std_var_2):
+
+    fig, ax = plt.subplots()
+    N = len(set(dm[id_var]))
+    ind = np.arange(N)
+    width=0.35
+
+
+    buf = 0
+    rects = []
+
+    xticks = list(dm[id_var])
+
+    #value_var = dm[value_var]
+    #std_var = group[1]
+    #label = group[2]
+    #col = group[3]
+
+    avgs = dm[value_var].values
+    avgs = avgs.reshape(1,-1).flatten()
+    error_upper = np.asarray(dm[std_var_2].values - dm[value_var].values)
+    error_lower = np.asarray(dm[value_var].values - dm[std_var_1].values)
+    error = [error_lower.reshape(1,-1).flatten(),error_upper.reshape(1,-1).flatten()]
+    rect = ax.bar(ind + buf, avgs, width, yerr=error)
+    buf = buf + width
+
+
+    ax.set_xticks(ind + width / 2);
+    ax.set_xticklabels(xticks);
+    ax.legend(loc='best')
+    #plt.setp(ax.xaxis.get_majorticklabels(), rotation=45);
+    #plt.setp(ax.xaxis.get_majorticklabels());
+    ax.set_ylabel('Odds Ratio')
+    #fig.savefig('../output/broad_screening/pbmc_logReg.pdf', dpi = 300)
+
+    return (fig, ax)
+    
