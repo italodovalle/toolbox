@@ -56,8 +56,21 @@ run_enrichment <- function(drug){
 }
 
 enrichment_test_Reactome <- function(gene,pcutoff=0.05,adjustmethod="BH",qcutoff=0.05,
-                                       min_gs_size=10, max_gs_size=500) {
-        x <- enrichPathway(gene,pvalueCutoff=pcutoff,
+                                       min_gs_size=10, max_gs_size=500, input = 'ENTREZ') {
+
+        if (input == "SYMBOL"){
+            gene.df <- bitr(genelist, fromType = "SYMBOL",
+                            toType = "ENTREZID",
+                            OrgDb = org.Hs.eg.db)
+            genes = gene.df$ENTREZID
+         }
+         else {
+            genes = genelist
+
+         }
+
+
+        x <- enrichPathway(genes,pvalueCutoff=pcutoff,
                             pAdjustMethod = adjustmethod,
                             qvalueCutoff = qcutoff,
                             minGSSize = min_gs_size,

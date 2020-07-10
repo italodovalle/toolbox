@@ -6,7 +6,7 @@ from statsmodels.stats.multitest import multipletests
 def hypergeom_test(success_in_sample, universe, success_in_universe, sample_size):
     """success_in_sample, universe, success_in_universe, sample"""
     return (1 - stats.hypergeom.cdf(success_in_sample - 1, universe,
-            success_in_universe, sample))
+            success_in_universe, sample_size))
 
 
 def pval_adjustment(pvals, alpha=0.05, method = 'fdr_bh'):

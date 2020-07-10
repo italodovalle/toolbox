@@ -74,7 +74,14 @@ def get_grouped_barchart(dm, id_var, value_var_1, value_var_2,
 
 
 
-def get_barplot_error (dm, id_var, value_var, std_var_1, std_var_2):
+def get_barplot_error (dm, id_var, value_var, std_var_1, std_var_2, pval,
+                       **kwargs):
+
+
+    if 'pval' in kwargs.keys():
+        tr_p = kwargs['pval']
+    else:
+        tr_p = 0.05
 
     fig, ax = plt.subplots()
     N = len(set(dm[id_var]))
@@ -86,28 +93,37 @@ def get_barplot_error (dm, id_var, value_var, std_var_1, std_var_2):
     rects = []
 
     xticks = list(dm[id_var])
-
-    #value_var = dm[value_var]
-    #std_var = group[1]
-    #label = group[2]
-    #col = group[3]
+    pvalues = list(dm[pval])
 
     avgs = dm[value_var].values
     avgs = avgs.reshape(1,-1).flatten()
     error_upper = np.asarray(dm[std_var_2].values - dm[value_var].values)
     error_lower = np.asarray(dm[value_var].values - dm[std_var_1].values)
     error = [error_lower.reshape(1,-1).flatten(),error_upper.reshape(1,-1).flatten()]
-    rect = ax.bar(ind + buf, avgs, width, yerr=error)
+    rects = ax.bar(ind + buf, avgs, width,yerr=error)
     buf = buf + width
 
 
+
+    for i,rect in enumerate(rects):
+        if pvalues[i] < 0.05:
+            w = ind[i]
+            yloc = rect.get_height() + error[1][i] + error[1][i]/2
+            xloc = w
+            clr = 'black'
+            align = 'left'
+            ax.annotate("*", xy=(w, yloc),xytext=(-4, 0),
+                                textcoords="offset points",
+                                ha=align, va='center',
+                                color=clr, weight='bold', fontsize = 20,clip_on=True)
+
     ax.set_xticks(ind + width / 2);
     ax.set_xticklabels(xticks);
+    ylim = ax.get_ylim()[1] + 0.2
+    ax.set_ylim(0, ylim)
     ax.legend(loc='best')
-    #plt.setp(ax.xaxis.get_majorticklabels(), rotation=45);
-    #plt.setp(ax.xaxis.get_majorticklabels());
-    ax.set_ylabel('Odds Ratio')
-    #fig.savefig('../output/broad_screening/pbmc_logReg.pdf', dpi = 300)
+    if 'label' in kwargs.keys():
+        ax.set_ylabel(kwargs['label'])
 
     return (fig, ax)
     
