@@ -31,7 +31,12 @@ def enrichment_reactome(geneset, alpha = 0.05,correction = 'fdr_bh',
         low_memory=False)
     r = r[r[5] == organism]
 
+
+    geneset = list(map(int, geneset))
+    geneset = list(map(str, geneset))
+
     universe = list(set(r[0]))
+    universe = list(map(str, universe))
 
     pathways = list(set(r[1]))
 

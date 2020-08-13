@@ -31,7 +31,8 @@ def get_zscores (disease_chemical, n_random, outdir,
         min_bin_size = 2 * max(len(nodes_from), len(nodes_to))
 
         dic = network_utils.calculate_proximity_italo(G, nodes_from,nodes_to,
-                                                      n_random = n_random)
+                                                      n_random = n_random,
+                                                      min_bin_size=min_bin_size)
         table = {}
         table['disease'] = disease
         table['n_mapped_disease'] = len(set(nodes_to))
