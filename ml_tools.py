@@ -13,14 +13,17 @@ from sklearn import metrics
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import ShuffleSplit
 
-def calculcate_auc(dw, label = 'therapeutic', vars, ascending = True,
-                           bootstrap = True, n_bootstrap = 2000,nsample = 150,
-                           random_seed = 42):
+def calculcate_auc(dw, vars,label = 'therapeutic',
+                   ascending = True,
+                   bootstrap = True, n_bootstrap = 2000,nsample = 150,
+                   random_seed = 42):
 
 
     """
     Function receives a dataframe with scores and labels
     Returns auc values with confidence interval considering each score
+    args:
+    - vars: col names. for each col one AUC
     """
 
     if ascending:
