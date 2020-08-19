@@ -65,5 +65,5 @@ def calculcate_auc(dw, vars,label = 'therapeutic',
 
 
     table = pd.DataFrame.from_dict(res,orient='index')
-    table['chemical'] = chemical
+    #table['chemical'] = chemical
     return (table)
