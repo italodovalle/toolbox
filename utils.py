@@ -87,8 +87,8 @@ def write_excel(df, outfile='out.xlsx',
 
     if description:
 
-        x = {'REAME':description}
-        x = pd.DataFrame.from_dict(x, orient='index')
+        x = {'REAME':description.split('\n')}
+        x = pd.DataFrame.from_dict(x, orient='columns')
     else:
         x = pd.DataFrame()
 

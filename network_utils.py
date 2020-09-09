@@ -209,18 +209,24 @@ def calculate_shortest_components (network, nodes_from, nodes_to,
     return (d)
 
 
-def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False):
+def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False,
+                      dataframe=False):
 
     """
     infile, sep, header, columns, lcc
     """
 
+    if dataframe:
+        dt = infile
+    else:
+        if header:
+            dt = pd.read_table(infile,sep = sep)
+        else:
+            dt = pd.read_table(infile,sep = sep,header=None)
+    
     if header:
-        dt = pd.read_table(infile,sep = sep)
         edges = zip(dt[columns[0]], dt[columns[1]])
     else:
-        header = None
-        dt = pd.read_table(infile,sep = sep,header=header)
         edges = zip(dt[0], dt[1])
 
     G = nx.Graph()
