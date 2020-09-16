@@ -26,6 +26,8 @@ def enrichment_reactome(geneset, alpha = 0.05,correction = 'fdr_bh',
         url = 'https://reactome.org/download/current/NCBI2Reactome_All_Levels.txt'
         r = pd.read_csv(url, sep = '\t', header=None,
         low_memory=False)
+    elif type(pathway_file) == pd.core.frame.DataFrame:
+        r = pathway_file
     else:
         r = pd.read_csv(pathway_file, sep = '\t', header=None,
         low_memory=False)
