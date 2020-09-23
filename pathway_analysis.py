@@ -9,6 +9,7 @@ Created on Thu May 14 20:54:47 2020
 from . import stats_utils
 from .guney_code import network_utilities
 from .guney_code import wrappers
+from toolbox import network_utils
 import pandas as pd
 import numpy as np
 from multiprocessing import Pool
