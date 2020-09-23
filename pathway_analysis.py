@@ -7,9 +7,111 @@ Created on Thu May 14 20:54:47 2020
 """
 
 from . import stats_utils
+from .guney_code import network_utilities
+from .guney_code import wrappers
 import pandas as pd
+import numpy as np
+from multiprocessing import Pool
+from functools import partial
 from collections import defaultdict
-import pkg_resources
+
+
+
+
+class pathways:
+
+    def __init__(self, dataframe, col_id, col_gene,
+                 col_desc = None, universe=None, G=None,
+                 disease_seeds=None):
+
+
+        if universe:
+            dataframe = dataframe[dataframe[col_gene].isin(universe)]
+        pathway2entrez = defaultdict(list)
+        for i in dataframe.index:
+            pathway2entrez[dp[col_id].loc[i]].append(dp[col_gene].loc[i])
+        self.pathway2entrez = pathway2entrez
+        if col_desc:
+            self.pathwayid2name = {i:j for i,j in zip(dataframe[col_id], dataframe[col_desc])}
+
+        if G:
+            self.G = G
+            all_genes = list(G.nodes())
+            self.all_genes = all_genes
+        if disease_seeds:
+            self.seeds = list(set(seeds) & set(self.all_genes))
+            self.disease_module = network_utils.get_lcc(self.G, seeds)
+        #if G and disease_seeds:
+
+
+
+
+    def disease_module_enrich(self,n_random = 100,
+                             min_bin_size = 100, lengths = None,
+                             seed=452456, ncpus = 5):
+
+        """
+        Test if pathway form a significant submodule inside the disease module
+        """
+
+        l_list  = []
+        bins = network_utilities.get_degree_binning(self.G, min_bin_size, lengths)
+        nodes_random = wrappers.get_random_nodes(self.seeds, self.G,
+                                        bins = bins, n_random = n_random,
+                                        min_bin_size = min_bin_size,
+                                        seed = seed)
+
+
+        all_pathways = list(self.pathway2entrez.keys())
+        p = Pool(ncpus)
+        #res = p.map(self.process_pathway_disease_module, all_pathways)
+        res = p.map(partial(self.process_pathway_disease_module, nodes_random=nodes_random),
+                    all_pathways)
+        p.close()
+
+
+        dic = {}
+        for x in res:
+            dic.update(x)
+
+        output = pd.DataFrame.from_dict(dic, orient='index')
+
+
+        return (output)
+
+
+
+    def process_pathway_disease_module(self, pathway, nodes_random):
+
+        dic = defaultdict(dict)
+
+        s = list(set(self.pathway2entrez[pathway]) & set(self.all_genes))
+        cc = network_utils.get_lcc(self.disease_module, s)
+        real = cc.number_of_nodes()
+
+        if real > 1:
+
+            null = []
+            for node_random in nodes_random:
+                random_module = network_utils.get_lcc(self.G, node_random)
+                cc_random = network_utils.get_lcc(random_module, s)
+                null.append(cc_random.number_of_nodes())
+
+            null = np.array(null)
+            dic[pathway]['pathway'] = pathway
+            dic[pathway]['size'] = len(s)
+            dic[pathway]['mapped'] = real
+            dic[pathway]['p_emp'] = null[null > real].shape[0]/null.shape[0]
+            dic[pathway]['avg'] = null.mean()
+            dic[pathway]['std'] = null.std()
+            if null.std() == 0:
+                dic[pathway]['z'] = float('nan')
+            else:
+                dic[pathway]['z'] = (real - null.mean())/null.std()
+
+
+        return (dic)
+
 
 
 def enrichment_reactome(geneset, alpha = 0.05,correction = 'fdr_bh',
