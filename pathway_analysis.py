@@ -39,8 +39,8 @@ class pathways:
             all_genes = list(G.nodes())
             self.all_genes = all_genes
         if disease_seeds:
-            self.seeds = list(set(seeds) & set(self.all_genes))
-            self.disease_module = network_utils.get_lcc(self.G, seeds)
+            self.seeds = list(set(disease_seeds) & set(self.all_genes))
+            self.disease_module = network_utils.get_lcc(self.G, self.seeds)
         #if G and disease_seeds:
 
 
