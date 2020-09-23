@@ -29,7 +29,7 @@ class pathways:
             dataframe = dataframe[dataframe[col_gene].isin(universe)]
         pathway2entrez = defaultdict(list)
         for i in dataframe.index:
-            pathway2entrez[dp[col_id].loc[i]].append(dp[col_gene].loc[i])
+            pathway2entrez[dataframe[col_id].loc[i]].append(dataframe[col_gene].loc[i])
         self.pathway2entrez = pathway2entrez
         if col_desc:
             self.pathwayid2name = {i:j for i,j in zip(dataframe[col_id], dataframe[col_desc])}
