@@ -3,7 +3,7 @@
 
 from pathlib import Path
 import os
-import smart open
+import smart_open
 
 def get_bucket_path(bucket_name, object_key):
 
