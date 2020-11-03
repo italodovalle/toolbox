@@ -19,7 +19,6 @@ from .separation import *
 from .guney_code.wrappers import network_utilities, get_random_nodes, calculate_closest_distance, calculate_proximity
 from scipy import stats
 from scipy import sparse
-import mygene
 import os
 from progressbar import ProgressBar
 import pickle
@@ -84,24 +83,27 @@ def get_significance_density(network, nodes_from,
                         seed=452456,lengths = None):
 
 
-    nodes_network = set(network.nodes())
+    nodes_network = list(set(network.nodes()))
+
+    nodes_from = list(set(nodes_network) & set(nodes_from))
+
+
 
     d = {}
     d['density'] = nx.density(nx.subgraph(network, nodes_from))
 
     if n_random:
 
-        if bins is None and (nodes_from_random is None or nodes_to_random is None):
-            bins = network_utilities.get_degree_binning(network,
-            min_bin_size, lengths) # if lengths is given, it will only use those nodes
-        if nodes_from_random is None:
-            nodes_from_random = get_random_nodes(nodes_from, network, bins = bins,
-            n_random = n_random, min_bin_size = min_bin_size, seed = seed)
+        bins = network_utilities.get_degree_binning(network, min_bin_size, lengths)
+        nodes_random = get_random_nodes(nodes_from, network,
+                                        bins = bins, n_random = n_random,
+                                        min_bin_size = min_bin_size,
+                                        seed = seed)
 
         #values = np.empty(len(nodes_from_random)) #n_random
         null = []
-        for i in range(len(nodes_from_random)):
-            res = nx.density(nx.subgraph(network, nodes_from_random[i]))
+        for i in range(len(nodes_random)):
+            res = nx.density(nx.subgraph(network, nodes_random[i]))
             null.append(res)
 
         d['avg_density'],d['std_density'] = np.mean(null), np.std(null)
@@ -223,7 +225,7 @@ def parse_interactome(infile, sep='\t', header=False, columns=[], lcc = False,
             dt = pd.read_table(infile,sep = sep)
         else:
             dt = pd.read_table(infile,sep = sep,header=None)
-    
+
     if header:
         edges = zip(dt[columns[0]], dt[columns[1]])
     else:

@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     ### Interactome params
 
-    description = 'Run Proximity'
+    description = 'Create Viz'
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-e', required=True, dest='edge_list',
                         action='store',help='edge list file')
@@ -101,6 +101,49 @@ if __name__ == '__main__':
     cytoscape=cyrest.cyclient()
     cytoscape.version()
 
+
+
+    ## node labels file
+
+    names = pd.read_csv(node_attributes)
+    names = names[[key_col, label_col]]
+    names['name'] = names[key_col].astype(str)
+
+
+    if index_col:
+        dx = pd.read_csv(edge_list, index_col=0)
+    else:
+        dx = pd.read_csv(edge_list)
+
+    dx = dx[~dx.target.isnull()]
+    dx['source'] = dx.source.astype(int)
+    dx['target'] = dx.target.astype(int)
+
+    ## remove duplicated edges
+    df = dx.copy()
+    for i in dx.index:
+        df.source.loc[i] = min(dx.source.loc[i],dx.target.loc[i])
+        df.target.loc[i] = max(dx.source.loc[i],dx.target.loc[i])
+
+    df = df.drop_duplicates()
+
+    dx = df.copy()
+    ## remove self loops
+    dx = dx[dx.source != dx.target]
+    print('%d nodes'%len(set(dx.source) | set(dx.target)))
+    dx['interaction'] = 'pp'
+    dx[['source', 'interaction', 'target']].to_csv(tmp_file, header = None, index=None, sep = ' ')
+
+    ## node scores file
+
+    node_scores = False
+
+    ### csv file node id, node score
+    node_scores_file = ''
+    node_scores_col = ''
+    if node_scores:
+        scores = pd.read_csv(node_scores_file)
+        scores['name'] = ds[node_scores_col].astype(str)
 
     ## create network
     net = create_network(tmp_file)
